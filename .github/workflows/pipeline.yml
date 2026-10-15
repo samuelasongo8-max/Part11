@@ -34,3 +34,8 @@ jobs:
         run: npm run test:e2e
         env:
           CI: true
+
+      - name: Deploy to Render
+        run: curl -fsS -X POST "$RENDER_DEPLOY_HOOK"
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
