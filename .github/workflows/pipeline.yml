@@ -39,6 +39,7 @@ jobs:
           CI: true
 
       - name: Deploy to Render
+        if: ${{ github.event_name == 'push' }}
         run: curl -fsS -X POST "$RENDER_DEPLOY_HOOK"
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
