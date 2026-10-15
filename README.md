@@ -2,6 +2,12 @@
 
 This repository is used for the CI/CD module of the Full Stack Open course
 
+## Live Application
+
+The Pokedex application is deployed on Render:
+
+[https://part11-koj9.onrender.com](https://part11-koj9.onrender.com)
+
 ## Commands
 
 Start by running `npm install` inside the project folder
