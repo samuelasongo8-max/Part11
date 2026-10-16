@@ -38,42 +38,22 @@ jobs:
         env:
           CI: true
 
+  deploy:
+    needs: [simple_deployment_pipeline]
+    runs-on: ubuntu-latest
+    if: ${{ success() && github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(join(github.event.commits.*.message, ' '), '#skip') }}
+    steps:
       - name: Deploy to Render
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(join(github.event.commits.*.message, ' '), '#skip') }}
         run: curl -fsS -X POST "$RENDER_DEPLOY_HOOK"
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
 
-      - name: Notify success to Discord
-        if: ${{ success() && github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(join(github.event.commits.*.message, ' '), '#skip') }}
-        uses: sarisia/actions-status-discord@v1
-        with:
-          webhook: ${{ secrets.DISCORD_WEBHOOK }}
-          status: success
-          title: Deployment succeeded
-          description: |
-            Commit `${{ github.sha }}` deployed to Render from `main`.
-          url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-      - name: Notify failure to Discord
-        if: failure()
-        uses: sarisia/actions-status-discord@v1
-        with:
-          webhook: ${{ secrets.DISCORD_WEBHOOK }}
-          status: failure
-          title: CI pipeline failed
-          description: |
-            **Commit:** `${{ github.sha }}`
-            **Message:** ${{ github.event.head_commit.message || github.event.pull_request.title }}
-            **Run:** [GitHub Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
   tag_release:
-    needs: [simple_deployment_pipeline]
+    needs: [simple_deployment_pipeline, deploy]
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(join(github.event.commits.*.message, ' '), '#skip') }}
+    if: ${{ success() && github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(join(github.event.commits.*.message, ' '), '#skip') }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -96,5 +76,37 @@ jobs:
           description: |
             **Commit:** `${{ github.sha }}`
             **Message:** ${{ github.event.head_commit.message }}
+            **Run:** [GitHub Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+  notify_success:
+    needs: [simple_deployment_pipeline, deploy]
+    runs-on: ubuntu-latest
+    if: ${{ success() && github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(join(github.event.commits.*.message, ' '), '#skip') }}
+    steps:
+      - name: Notify success to Discord
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: success
+          title: Deployment succeeded
+          description: |
+            Commit `${{ github.sha }}` deployed to Render from `main`.
+          url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+  notify_failure:
+    needs: [simple_deployment_pipeline, deploy, notify_success]
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.simple_deployment_pipeline.result == 'failure' || needs.deploy.result == 'failure' || needs.notify_success.result == 'failure') }}
+    steps:
+      - name: Notify failure to Discord
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: failure
+          title: CI pipeline failed
+          description: |
+            **Commit:** `${{ github.sha }}`
+            **Message:** ${{ github.event.head_commit.message || github.event.pull_request.title }}
             **Run:** [GitHub Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
