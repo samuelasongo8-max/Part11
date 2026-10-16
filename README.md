@@ -20,3 +20,11 @@ Start by running `npm install` inside the project folder
 ## Pull Request Checks
 
 GitHub Actions automatically runs the CI pipeline when a pull request is opened or updated against the `main` branch. The pipeline checks code quality, runs tests, builds the application, and runs end-to-end tests.
+## Exercise 21: Your Own Pipeline
+
+This exercise is completed in a separate repository, as required by the exercise instructions.
+
+- **Project repository:** https://github.com/samuelasongo8-max/phonebook-exercise21
+- **GitHub Actions workflow:** https://github.com/samuelasongo8-max/phonebook-exercise21/actions
+
+The project contains the Phonebook application and a GitHub Actions workflow that checks the frontend code and builds the application.
